@@ -4,15 +4,18 @@ import com.rong.miaosha.dao.MiaoshaUserDao;
 import com.rong.miaosha.model.MiaoshaUser;
 import com.rong.miaosha.redis.MiaoshaUserKey;
 import com.rong.miaosha.redis.RedisService;
+import com.rong.miaosha.result.CodeMessage;
 import com.rong.miaosha.util.MD5Util;
 import com.rong.miaosha.util.UuidUtil;
 import com.rong.miaosha.vo.LoginVo;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletResponse;
 import javax.validation.Valid;
+import com.rong.miaosha.exception.GlobalException;
 
 
 @Service
@@ -72,17 +75,29 @@ public class MiaoshaUserService {
         //取user
         MiaoshaUser user = getById(id);
         if(user == null) {
-            throw new GlobalException(CodeMsg.MOBILE_NOT_EXIST);
+            throw new GlobalException(CodeMessage.MOBILE_NOT_EXIST);
         }
         //更新数据库
         MiaoshaUser toBeUpdate = new MiaoshaUser();
         toBeUpdate.setId(id);
-        toBeUpdate.setPassword(MD5Util.formPassToDBPass(formPass, user.getSalt()));
+        toBeUpdate.setPassword(MD5Util.formPassWordToDbPassWord(formPass));
         miaoshaUserDao.update(toBeUpdate);
         //处理缓存
         redisService.delete(MiaoshaUserKey.getById, ""+id);
         user.setPassword(toBeUpdate.getPassword());
         redisService.set(MiaoshaUserKey.token, token, user);
         return true;
+    }
+
+    public MiaoshaUser getByToken(HttpServletResponse response, String token) {
+        if(StringUtils.isEmpty(token)) {
+            return null;
+        }
+        MiaoshaUser user = redisService.get(MiaoshaUserKey.token, token, MiaoshaUser.class);
+        //延长有效期
+        if(user != null) {
+            addCookies(response, token, user);
+        }
+        return user;
     }
 }
