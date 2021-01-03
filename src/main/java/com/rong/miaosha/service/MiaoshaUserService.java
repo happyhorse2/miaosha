@@ -8,6 +8,7 @@ import com.rong.miaosha.result.CodeMessage;
 import com.rong.miaosha.util.MD5Util;
 import com.rong.miaosha.util.UuidUtil;
 import com.rong.miaosha.vo.LoginVo;
+import com.sun.corba.se.spi.legacy.connection.GetEndPointInfoAgainException;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -31,19 +32,19 @@ public class MiaoshaUserService {
 
     public Boolean login(HttpServletResponse response, LoginVo loginVo){
         if(loginVo==null){
-            return false;
+            throw new GlobalException(CodeMessage.REQUEST_ILLEGAL);
         }
         Long mobile = Long.parseLong(loginVo.getMobile());
         MiaoshaUser user = getById(mobile);
         if(user == null){
-            return false;
+            throw new GlobalException(CodeMessage.MOBILE_ERROR);
         }
         String formPassWord = loginVo.getPassword();
         System.out.println(loginVo.getPassword()+"        "+loginVo.getMobile());
         String calPassWord = MD5Util.formPassWordToDbPassWord(formPassWord);
         System.out.println(user.getPassword()+"   "+calPassWord);
         if (!user.getPassword().equals(calPassWord)){
-            return false;
+            throw new GlobalException(CodeMessage.PASSWORD_ERROR);
         }
         String uuid = UuidUtil.uuid();
         addCookies(response, uuid, user);

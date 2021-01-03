@@ -1,6 +1,6 @@
 package com.rong.miaosha.redis;
 
-public abstract class BasicPrefix implements KeyPrefix {
+public abstract class BasicPrefix implements KeyPrefix{
 
     private int expireSeconds;
     private String prefix;
